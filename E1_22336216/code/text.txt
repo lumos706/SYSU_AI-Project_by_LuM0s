@@ -1,0 +1,10 @@
+6 8
+a b 2
+a c 3
+b d 5
+b e 2
+c e 5
+d e 1
+d z 2
+e z 4
+a z
