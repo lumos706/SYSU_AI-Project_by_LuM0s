@@ -69,12 +69,20 @@ def pruning(n, KB, assignment, parent):
     # 只有非知识库内的句子才会有变量替换
     while not q.empty():
         cur = q.get()
-        if cur[0] >= n:
-            pruningkb.append([KB[cur[0]], parent[cur[0]], assignment[cur[0]]])
-            q.put(parent[cur[0]])
-        if cur[2] >= n:
-            pruningkb.append([KB[cur[2]], parent[cur[2]], assignment[cur[2]]])
-            q.put(parent[cur[2]])
+        if cur[0] > cur[2]:
+            if cur[0] >= n:
+                pruningkb.append([KB[cur[0]], parent[cur[0]], assignment[cur[0]]])
+                q.put(parent[cur[0]])
+            if cur[2] >= n:
+                pruningkb.append([KB[cur[2]], parent[cur[2]], assignment[cur[2]]])
+                q.put(parent[cur[2]])
+        else:
+            if cur[2] >= n:
+                pruningkb.append([KB[cur[2]], parent[cur[2]], assignment[cur[2]]])
+                q.put(parent[cur[2]])
+            if cur[0] >= n:
+                pruningkb.append([KB[cur[0]], parent[cur[0]], assignment[cur[0]]])
+                q.put(parent[cur[0]])
     return pruningkb
 
 
@@ -103,6 +111,8 @@ def convert_to_string(lst):
     # 去除最后一个逗号
     result = result.rstrip(",")
     # 返回结果字符串
+    if result == "":
+        return result
     return '(' + result + ')'
 
 
@@ -121,15 +131,23 @@ def restore_string(lst):
     return result[:-1] + ') '
 
 
-def stdoutput(pruningkb, newindex):
+def num_to_string(kb, line, num):
+    if len(kb[line]) == 1:
+        return ''
+    else:
+        return chr(num + 97)
+
+
+def stdoutput(n, kb, pruningkb, newindex):
+    count = n
     for i, j in enumerate(pruningkb):
         if i == len(pruningkb) - 1:
-            print(f"R[{newindex[j[1][0]]},{newindex[j[1][2]]}] = []")
+            print(count + i + 1, f"R[{newindex[j[1][0]]},{newindex[j[1][2]]}] = []")
         else:
             #
-            print(
-                f"R[{newindex[j[1][0]]}{chr(97 + j[1][1])},{newindex[j[1][2]]}{chr(97 + j[1][3])}]{convert_to_string(j[2])} = ",
-                end='')
+            print(count + i + 1,
+                  f"R[{newindex[j[1][0]]}{num_to_string(kb, j[1][0], j[1][1])},{newindex[j[1][2]]}{num_to_string(kb, j[1][2], j[1][3])}]{convert_to_string(j[2])} = ",
+                  end='')
         for k in range(len(j[0])):
             if k is not len(j[0]) - 1:
                 print(restore_string(j[0][k]), end=',')
@@ -149,13 +167,14 @@ def main():
         # 打印知识库
         # 使用计数器跳过第一行
         line_count = 0
-        for line in file:
-            print(line.strip())
+        for i, line in enumerate(file):
             # 如果是第一行，则跳过
             if line_count == 0:
                 n = int(line)
+                print(n)
                 line_count += 1
                 continue
+            print(i, line.strip())
 
             # 使用正则表达式匹配谓词及其参数
             matches = (re.findall(r'¬?\w+\(\w+,*\w*\)', line))
@@ -175,6 +194,8 @@ def main():
     assignment = [[] for _ in range(n)]
     parent = [[] for _ in range(n)]
 
+    # print(KB)
+
     for i in range(len(KB)):
         for j in range(len(KB[i])):
             KB[i][j] = KB[i][j].replace('(', ",").replace(')', '').split(',')
@@ -185,20 +206,21 @@ def main():
     # print()
     MGU(KB, assignment, parent)
     # print()
-    # for item in KB:
-    #     print(item)
+    # for i, item in enumerate(KB):
+    #     print(i,item)
     # print()
     # for item in parent:
     #     print(item)
     # print()
 
-    pruningkb = pruning(n, KB, assignment, parent)[::-1]
+    pruningkb = pruning(n, KB, assignment, parent)
 
     # for item in pruningkb:
     #     print(item)
     newindex = labeling(n, pruningkb)
     # print(newindex)
-    stdoutput(pruningkb, newindex)
+    pruningkb = pruningkb[::-1]
+    stdoutput(n, KB, pruningkb, newindex)
 
 
 if __name__ == '__main__':
