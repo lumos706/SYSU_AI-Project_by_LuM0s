@@ -16,47 +16,45 @@ def Judge(clause1, clause2):
     return hash
 
 
+def resolve(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result=None):
+    copyclause1 = copy.deepcopy(KB[clause1_index])
+    copyclause2 = copy.deepcopy(KB[clause2_index])
+    del copyclause1[i]
+    del copyclause2[j]
+    if hash_result:
+        for hash_pair in hash_result:
+            for index, predicate in enumerate(copyclause2):
+                while hash_pair[0] in predicate:
+                    copyclause2[index][predicate.index(hash_pair[0])] = hash_pair[1]
+
+    parent.append([clause1_index, i, clause2_index, j])
+    assignment.append(hash_result if hash_result else [])
+    newkb = list(map(list, set(map(tuple, (copyclause1 + copyclause2)))))
+    KB.append(newkb)
+    if not newkb:
+        return True # 能归结
+    return False
+
+
 def MGU(KB, assignment, parent):
     # 归结合一函数
-    for i, _ in enumerate(KB):  # 这里用len(KB)不知道为什么就不行
-        for j, _ in enumerate(KB):
-            if i == j: continue
-            for m in range(len(KB[i])):
-                for n in range(len(KB[j])):
+    for clause1_index, clause1 in enumerate(KB):
+        for clause2_index, clause2 in enumerate(KB):
+            if clause1_index == clause2_index:
+                continue
+            for i, predicate1 in enumerate(clause1):
+                for j, predicate2 in enumerate(clause2):
                     # 谓词相反
-                    if ((KB[i][m][0] == '¬' + KB[j][n][0] or KB[j][n][0] == '¬' + KB[i][m][0]) and len(KB[i][m]) == len(
-                            KB[j][n])):
-                        if KB[i][m][1:] == KB[j][n][1:]:
-                            copyclause1 = copy.deepcopy(KB[i])
-                            copyclause2 = copy.deepcopy(KB[j])
-                            del copyclause1[m]
-                            del copyclause2[n]
-                            parent.append([i, m, j, n])  # i行第m个 j行第n个
-                            assignment.append([])  # 无变量替换
-                            newkb = list(map(list, set(map(tuple, (copyclause1 + copyclause2)))))
-                            KB.append(newkb)
-                            if not newkb:
-                                return  # 能归结
+                    if (predicate1[0] == '¬' + predicate2[0] or predicate2[0] == '¬' + predicate1[0]) and len(predicate1) == len(predicate2):
+                        if predicate1[1:] == predicate2[1:]:
+                            if resolve(KB, parent, assignment, clause1_index, i, clause2_index, j):
+                                return
                         else:
-                            hash = Judge(KB[i][m], KB[j][n])
-                            if not hash:
-                                continue
-                            else:
-                                copyclause1 = copy.deepcopy(KB[i])
-                                copyclause2 = copy.deepcopy(KB[j])
-                                del copyclause1[m]
-                                del copyclause2[n]
-                                for p in range(len(hash)):
-                                    for q in range(len(copyclause2)):
-                                        while hash[p][0] in copyclause2[q]:
-                                            copyclause2[q][copyclause2[q].index(hash[p][0])] = hash[p][1]
+                            hash_result = Judge(predicate1, predicate2)
+                            if hash_result:
+                                if resolve(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result):
+                                    return
 
-                                parent.append([i, m, j, n])  # i行第m个 j行第n个
-                                assignment.append(hash)  # 变量替换
-                                newkb = list(map(list, set(map(tuple, (copyclause1 + copyclause2)))))
-                                KB.append(newkb)
-                                if not newkb:
-                                    return  # 能归结
 
 
 def pruning(n, KB, assignment, parent):
@@ -89,12 +87,14 @@ def pruning(n, KB, assignment, parent):
 def labeling(n, pruningkb):
     # 重新标号，使用字典对应
     newindex = {i: None for i in range(n)}
-    for i in range(len(pruningkb)):
-        # print(pruningkb[i][1])
-        if pruningkb[i][1][0] not in newindex:
-            newindex[pruningkb[i][1][0]] = None
-        if pruningkb[i][1][2] not in newindex:
-            newindex[pruningkb[i][1][2]] = None
+    seen_indexes = set()
+    for item in pruningkb:
+        indexes = item[1]
+        # parent[0] and parent[2]
+        for index in (indexes[0], indexes[2]):
+            if index not in newindex and index not in seen_indexes:
+                newindex[index] = None
+                seen_indexes.add(index)
     newindex = sorted(newindex.keys())
     newindex = {x: newindex.index(x) + 1 for x in newindex}
     return newindex
@@ -159,7 +159,7 @@ variable = ['x', 'y', 'z', 'u', 'v', 'w']
 
 
 def main():
-    filename = "alpineclub.txt"
+    filename = "blockworld.txt"
     KB = []
     n = 0
     # 打开文件
@@ -171,6 +171,7 @@ def main():
             # 如果是第一行，则跳过
             if line_count == 0:
                 n = int(line)
+                # 获取个数n
                 print(n)
                 line_count += 1
                 continue
