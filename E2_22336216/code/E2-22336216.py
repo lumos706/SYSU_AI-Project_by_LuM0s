@@ -32,7 +32,8 @@ def resolve(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_res
     newkb = list(map(list, set(map(tuple, (copyclause1 + copyclause2)))))
     KB.append(newkb)
     if not newkb:
-        return True # 能归结
+        return True
+        # 能归结
     return False
 
 
@@ -56,7 +57,6 @@ def MGU(KB, assignment, parent):
                                     return
 
 
-
 def pruning(n, KB, assignment, parent):
     # 使用二叉树结构层序遍历剪枝
     pruningkb = []
@@ -67,6 +67,7 @@ def pruning(n, KB, assignment, parent):
     # 只有非知识库内的句子才会有变量替换
     while not q.empty():
         cur = q.get()
+        # 大的先进队列(后推出来)，符合推理常理
         if cur[0] > cur[2]:
             if cur[0] >= n:
                 pruningkb.append([KB[cur[0]], parent[cur[0]], assignment[cur[0]]])
