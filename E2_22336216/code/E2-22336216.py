@@ -1,10 +1,21 @@
 import re
 import queue
 import copy
+import time
 
 
 def Judge(clause1, clause2):
-    # 判断能否变量替换
+    """
+    判断两个子句是否可以进行变量替换。
+
+    参数:
+        clause1 (list): 第一个原子公式。
+        clause2 (list): 第二个原子公式。
+
+    返回:
+        hash (list): 两个公式中对应变量的替换集。
+        False (bool): 如果两个原子公式不能进行变量替换。
+    """
     hash = []
     for i in range(1, len(clause1)):
         if clause1[i] not in variable and clause2[i] not in variable and clause1[i] == clause2[i]:
@@ -16,7 +27,24 @@ def Judge(clause1, clause2):
     return hash
 
 
-def resolve(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result=None):
+def merge(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result=None):
+    """
+    合并知识库中的两个子句。
+
+    参数:
+        KB (list): 知识库。
+        parent (list): 知识库中每个子句的父子句列表。
+        assignment (list): 知识库中每个子句的变量分配列表。
+        clause1_index (int): 知识库中第一个子句的索引。
+        i (int): 从第一个子句中删除的原子公式的索引。
+        clause2_index (int): 知识库中第二个子句的索引。
+        j (int): 从第二个子句中删除的原子公式的索引。
+        hash_result (list, optional): 两个子句中对应变量的替换列表。
+
+    返回:
+        True (bool): 如果新子句为空。
+        False (bool): 如果新子句不为空。
+    """
     copyclause1 = copy.deepcopy(KB[clause1_index])
     copyclause2 = copy.deepcopy(KB[clause2_index])
     del copyclause1[i]
@@ -37,8 +65,16 @@ def resolve(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_res
     return False
 
 
-def MGU(KB, assignment, parent):
-    # 归结合一函数
+def resolve(KB, assignment, parent):
+    """
+    对知识库中的子句进行归结。
+
+    参数:
+        KB (list): 知识库。
+        assignment (list): 知识库中每个子句的变量分配列表。
+        parent (list): 知识库中每个子句的父子句列表。
+    """
+    start_time = time.time()
     for clause1_index, clause1 in enumerate(KB):
         for clause2_index, clause2 in enumerate(KB):
             if clause1_index == clause2_index:
@@ -48,17 +84,38 @@ def MGU(KB, assignment, parent):
                     # 谓词相反
                     if (predicate1[0] == '¬' + predicate2[0] or predicate2[0] == '¬' + predicate1[0]) and len(predicate1) == len(predicate2):
                         if predicate1[1:] == predicate2[1:]:
-                            if resolve(KB, parent, assignment, clause1_index, i, clause2_index, j):
+                            if merge(KB, parent, assignment, clause1_index, i, clause2_index, j):
+                                end_time = time.time()  # 记录结束时间
+                                elapsed_time = end_time - start_time  # 计算时间差
+                                if elapsed_time > 10:  # 如果时间超过10秒
+                                    print("无法归结")
+                                    exit()  # 终止整个程序
                                 return
                         else:
                             hash_result = Judge(predicate1, predicate2)
                             if hash_result:
-                                if resolve(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result):
+                                if merge(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result):
+                                    end_time = time.time()  # 记录结束时间
+                                    elapsed_time = end_time - start_time  # 计算时间差
+                                    if elapsed_time > 10:  # 如果时间超过10秒
+                                        print("无法归结")
+                                        exit()  # 终止整个程序
                                     return
 
 
 def pruning(n, KB, assignment, parent):
-    # 使用二叉树结构层序遍历剪枝
+    """
+    对归结树进行剪枝。
+
+    参数:
+        n (int): 原始知识库中的子句数量。
+        KB (list): 知识库。
+        assignment (list): 知识库中每个子句的变量分配列表。
+        parent (list): 知识库中每个子句的父子句列表。
+
+    返回:
+        pruningkb (list): 剪枝后的知识库。
+    """
     pruningkb = []
     q = queue.Queue()
     q.put(parent[-1])
@@ -86,7 +143,16 @@ def pruning(n, KB, assignment, parent):
 
 
 def labeling(n, pruningkb):
-    # 重新标号，使用字典对应
+    """
+    对剪枝后的知识库中的子句进行标号。
+
+    参数:
+        n (int): 原始知识库中的子句数量。
+        pruningkb (list): 剪枝后的知识库。
+
+    返回:
+        newindex (dict): 一个字典，将旧的子句索引映射到新的子句索引。
+    """
     newindex = {i: None for i in range(n)}
     seen_indexes = set()
     for item in pruningkb:
@@ -102,7 +168,15 @@ def labeling(n, pruningkb):
 
 
 def convert_to_string(lst):
-    # 变量替换
+    """
+    将变量分配列表转换为字符串。
+
+    参数:
+        lst (list): 变量分配列表。
+
+    返回:
+        str: 变量分配的字符串表示。
+    """
     # 初始化一个空字符串
     result = ""
     # 遍历列表中的元组
@@ -118,7 +192,15 @@ def convert_to_string(lst):
 
 
 def restore_string(lst):
-    # KB还原回正常形式
+    """
+    将谓词列表恢复为字符串。
+
+    参数:
+        lst (list): 谓词列表。
+
+    返回:
+        str: 谓词的字符串表示。
+    """
     # 初始化一个空字符串
     result = " "
     # 遍历列表中的元素
@@ -133,6 +215,17 @@ def restore_string(lst):
 
 
 def num_to_string(kb, line, num):
+    """
+    将数字转换为字符串。
+
+    参数:
+        kb (list): 知识库。
+        line (int): 知识库中的子句索引。
+        num (int): 要转换的数字。
+
+    返回:
+        str: 数字的字符串表示。
+    """
     if len(kb[line]) == 1:
         return ''
     else:
@@ -140,6 +233,18 @@ def num_to_string(kb, line, num):
 
 
 def stdoutput(n, kb, pruningkb, newindex):
+    """
+    生成标准输出。
+
+    参数:
+        n (int): 原始知识库中的子句数量。
+        KB (list): 知识库。
+        pruningkb (list): 剪枝后的知识库。
+        newindex (dict): 一个字典，将旧的子句索引映射到新的子句索引。
+
+    返回:
+        output (list): 标准输出。
+    """
     count = n
     for i, j in enumerate(pruningkb):
         if i == len(pruningkb) - 1:
@@ -147,7 +252,7 @@ def stdoutput(n, kb, pruningkb, newindex):
         else:
             #
             print(count + i + 1,
-                  f"R[{newindex[j[1][0]]}{num_to_string(kb, j[1][0], j[1][1])},{newindex[j[1][2]]}{num_to_string(kb, j[1][2], j[1][3])}]{convert_to_string(j[2])} = ",
+                  f"R[{newindex[j[1][0]]}{num_to_string(kb, j[1][0], j[1][1])},{newindex[j[1][2]]}{num_to_string(kb, j[1][2], j[1][3])}]{convert_to_string(j[2])} =",
                   end='')
         for k in range(len(j[0])):
             if k is not len(j[0]) - 1:
@@ -156,11 +261,14 @@ def stdoutput(n, kb, pruningkb, newindex):
                 print(restore_string(j[0][k]))
 
 
-variable = ['x', 'y', 'z', 'u', 'v', 'w']
+variable = ['x', 'y', 'z', 'u', 'v', 'w', 'xx', 'yy', 'zz']
 
 
 def main():
-    filename = "blockworld.txt"
+    """
+    程序的主函数。
+    """
+    filename = "alpineclub.txt"
     KB = []
     n = 0
     # 打开文件
@@ -195,32 +303,15 @@ def main():
     # 记忆变量替换的列表assignment和记录父子句的列表Parent
     assignment = [[] for _ in range(n)]
     parent = [[] for _ in range(n)]
-
-    # print(KB)
+    sorted(KB)
 
     for i in range(len(KB)):
         for j in range(len(KB[i])):
             KB[i][j] = KB[i][j].replace('(', ",").replace(')', '').split(',')
 
-    # print()
-    # for item in KB:
-    #     print(item)
-    # print()
-    MGU(KB, assignment, parent)
-    # print()
-    # for i, item in enumerate(KB):
-    #     print(i,item)
-    # print()
-    # for item in parent:
-    #     print(item)
-    # print()
-
+    resolve(KB, assignment, parent)
     pruningkb = pruning(n, KB, assignment, parent)
-
-    # for item in pruningkb:
-    #     print(item)
     newindex = labeling(n, pruningkb)
-    # print(newindex)
     pruningkb = pruningkb[::-1]
     stdoutput(n, KB, pruningkb, newindex)
 

@@ -18,7 +18,7 @@ def Judge(clause1, clause2):
     return hash
 
 
-def resolve(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result=None):
+def MGU(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result=None):
     copyclause1 = copy.deepcopy(KB[clause1_index])
     copyclause2 = copy.deepcopy(KB[clause2_index])
     del copyclause1[i]
@@ -39,7 +39,7 @@ def resolve(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_res
     return False
 
 
-def MGU(KB, assignment, parent):
+def resolve(KB, assignment, parent):
     # 归结合一函数
     for clause1_index, clause1 in enumerate(KB):
         for clause2_index, clause2 in enumerate(KB):
@@ -50,12 +50,12 @@ def MGU(KB, assignment, parent):
                     # 谓词相反
                     if (predicate1[0] == '¬' + predicate2[0] or predicate2[0] == '¬' + predicate1[0]) and len(predicate1) == len(predicate2):
                         if predicate1[1:] == predicate2[1:]:
-                            if resolve(KB, parent, assignment, clause1_index, i, clause2_index, j):
+                            if MGU(KB, parent, assignment, clause1_index, i, clause2_index, j):
                                 return
                         else:
                             hash_result = Judge(predicate1, predicate2)
                             if hash_result:
-                                if resolve(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result):
+                                if MGU(KB, parent, assignment, clause1_index, i, clause2_index, j, hash_result):
                                     return
 
 
@@ -200,7 +200,7 @@ def main():
     # for item in KB:
     #     print(item)
     # print()
-    MGU(KB, assignment, parent)
+    resolve(KB, assignment, parent)
     # print()
     # for i, item in enumerate(KB):
     #     print(i,item)
