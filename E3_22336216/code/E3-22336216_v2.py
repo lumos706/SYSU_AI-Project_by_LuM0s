@@ -1,7 +1,8 @@
 import copy
 import time
 from queue import PriorityQueue
-
+import cProfile
+import pstats
 
 class Puzzle:
     """
@@ -50,7 +51,7 @@ class Puzzle:
         计算当前状态的启发式值。
         """
         h1 = 0
-        # h2 = 0
+        h2 = 0
         for i in range(4):
             for j in range(4):
                 num = self.state[i * 4 + j]
@@ -58,18 +59,18 @@ class Puzzle:
                     row_goal = (num - 1) // 4
                     col_goal = (num - 1) % 4
                     h1 += abs(i - row_goal) + abs(j - col_goal)
-                    # if j == col_goal:
-                    #     for k in range(j + 1, 4):
-                    #         next_num = self.state[i * 4 + k]
-                    #         if next_num != 0 and (next_num - 1) // 4 == i and (next_num - 1) % 4 < j:
-                    #             h2 += 2
-                    # if i == row_goal:
-                    #     for k in range(i + 1, 4):
-                    #         next_num = self.state[k * 4 + j]
-                    #         if next_num != 0 and (next_num - 1) % 4 == j and (next_num - 1) // 4 < i:
-                    #             h2 += 2
+                    if j == col_goal:
+                        for k in range(j + 1, 4):
+                            next_num = self.state[i * 4 + k]
+                            if next_num != 0 and (next_num - 1) // 4 == i and (next_num - 1) % 4 < j:
+                                h2 += 2
+                    if i == row_goal:
+                        for k in range(i + 1, 4):
+                            next_num = self.state[k * 4 + j]
+                            if next_num != 0 and (next_num - 1) % 4 == j and (next_num - 1) // 4 < i:
+                                h2 += 2
 
-        self.h = h1
+        self.h = h1 + h2
 
     def successors(self, visited):
         """
@@ -163,7 +164,7 @@ def search(state, g, limit, visited):
         visited.add(successor.state)
         temp, newstate = search(successor, g + 1, limit, visited)
         if temp == 'FOUND':
-            return 'FOUND', newstate
+           return 'FOUND', newstate
         if temp < min_val:
             min_val = temp
         visited.remove(successor.state)  # 回溯，移除最后一个元素
@@ -197,7 +198,7 @@ def main():
     主函数，从文件中读取拼图的初始状态，然后使用A*算法和IDA*算法解决拼图问题，并打印解决方案和运行时间。
     """
     # matrix = [0, 5, 15, 14, 7, 9, 6, 13, 1, 2, 12, 10, 8, 11, 4, 3]  # example initial state
-    with open('input7.txt', 'r') as f:
+    with open('input2.txt', 'r') as f:
         lines = f.readlines()
     matrix = [int(num) for line in lines for num in line.split()]
     matrix1 = copy.deepcopy(matrix)
@@ -225,44 +226,6 @@ def main():
     time_end = time.time()
     time_c = time_end - time_start
 
-    print("\nIDA* Algorithm Solution:")
-    print("Total moves:", ans.g)
-    print('IDA*:', 'time cost', time_c, 's')
-    print(ans.path, end='\nstate:\n')
-    for move in ans.path:
-        print_puzzle(matrix)
-        print("----------")
-        move_blank(matrix, move)
-    print_puzzle(matrix)
-    print("----------")
-
-    with open('input8.txt', 'r') as f:
-        lines = f.readlines()
-    matrix = [int(num) for line in lines for num in line.split()]
-    matrix1 = copy.deepcopy(matrix)
-    # print(matrix)
-    a = Puzzle(matrix)
-    time_start = time.time()
-    ans = A_star(a)
-    time_end = time.time()
-    time_c = time_end - time_start
-
-    print("A* Algorithm Solution:")
-    print("Total moves:", ans.g)
-    print('A*:', 'time cost', time_c, 's')
-    print(ans.path, end='\nstate:\n')
-    for move in ans.path:
-        print_puzzle(matrix1)
-        print("----------")
-        move_blank(matrix1, move)
-    print_puzzle(matrix1)
-    print("----------")
-    # print(ans.path)
-
-    time_start = time.time()
-    ans = IDA_star(a)
-    time_end = time.time()
-    time_c = time_end - time_start
 
     print("\nIDA* Algorithm Solution:")
     print("Total moves:", ans.g)

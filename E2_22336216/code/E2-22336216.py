@@ -268,7 +268,7 @@ def main():
     """
     程序的主函数。
     """
-    filename = "alpineclub.txt"
+    filename = "blockworld.txt"
     KB = []
     n = 0
     # 打开文件
