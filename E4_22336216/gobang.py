@@ -2,9 +2,9 @@
 from argparse import ArgumentParser
 
 import pygame
-
+import time
 import game
-from Agent_1 import Search
+from Agent_2 import Search
 
 ROWS = 15
 SIDE = 30
@@ -116,11 +116,14 @@ class Gobang(game.Game):
                     self.draw_chess(RGB[self.board[i][j]], i, j)
 
     def AI_player(self):
+        begin = time.time()
         pygame.display.set_caption("五子棋 ---- AI思考中")
         x, y, alpha = Search(self.board, EMPTY, BLACK, WHITE, self.black)
+        end = time.time()
         pygame.display.set_caption("五子棋")
         self.click(y * SIDE, x * SIDE)
         print(x, y, alpha)
+        print("AI cost time: ", end - begin, "s")
 
 
 # "example/14.txt"
@@ -133,7 +136,7 @@ if __name__ == '__main__':
 ============================================
     ''')
     parser = ArgumentParser(description='gobang')
-    parser.add_argument('--chess_file', type=str, default=None)
+    parser.add_argument('--chess_file', type=str, default="example/15.txt")
     args = parser.parse_args()
     gobang = Gobang("五子棋", (SCREEN_WIDTH, SCREEN_HEIGHT), chess_file=args.chess_file)
     gobang.run()

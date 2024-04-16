@@ -23,9 +23,11 @@ def RandomSearch(board, EMPTY):
     return x, y, 0
 
 
-def AlphaBetaSearch(board, EMPTY, BLACK, WHITE, isblack, depth=1):
+def AlphaBetaSearch(board, EMPTY, BLACK, WHITE, isblack, depth=3):
     def max_value(board, alpha, beta, depth, counts):
-        if depth == 0 or is_board_full(board):
+        pattb = (1, 1, 1, 1, 1)
+        pattw = (0, 0, 0, 0, 0)
+        if depth == 0 or count_pattern(board, pattw) > 0:
             return evaluate(board, isblack), None
         value = float('-inf')
         move = None
@@ -43,7 +45,9 @@ def AlphaBetaSearch(board, EMPTY, BLACK, WHITE, isblack, depth=1):
         return value, move
 
     def min_value(board, alpha, beta, depth, counts):
-        if depth == 0 or is_board_full(board):
+        pattw= (0, 0, 0, 0, 0)
+        pattb = (1, 1, 1, 1, 1)
+        if depth == 0 or count_pattern(board, pattb) > 0:
             return evaluate(board, isblack), None
         value = float('inf')
         move = None
@@ -98,8 +102,8 @@ SCORES = {
     "SFOUR": 6660000,  # 冲四
     "THREE": 625000,  # 活三
     "STHREE": 62500,  # 眠三
-    "TWO": 6250,  # 活二
-    "STWO": 625,  # 眠二
+    # "TWO": 6250,  # 活二
+    # "STWO": 625,  # 眠二
 }
 # SCORES = {
 #     "FIVE": 999999999,  # 连五
@@ -113,13 +117,21 @@ SCORES = {
 
 # 定义棋型的模式
 PATTERNS = {
-    "FIVE": ["11111"],  # 连五
+    "FIVE": ["11111",
+    ],  # 连五
     "FOUR": [
         "211112",  # 活四
     ],
     "SFOUR": [
         "011112",  # 冲四
         "211110",  # 冲四
+        "011121",  # 冲四
+        "121110",  # 冲四
+        "11211",  # 冲四
+        # "01110012",  # 冲四
+        # "21001110",  # 冲四
+        # "01110112",  # 冲四
+        # "21001110",  # 冲四
     ],
     "THREE": [
         "21112",  # 活三
@@ -136,17 +148,17 @@ PATTERNS = {
         "12211",  # 眠三
         "12121",  # 眠三
     ],
-    "TWO": [
-        "221122",  # 活二
-        "21212",  # 活二
-        "212212",  # 活二
-    ],
-    "STWO": [
-        "011222",  # 眠二
-        "012122",  # 眠二
-        "012212",  # 眠二
-        "12221",  # 眠二
-    ],
+    # "TWO": [
+    #     "221122",  # 活二
+    #     "21212",  # 活二
+    #     "212212",  # 活二
+    # ],
+    # "STWO": [
+    #     "011222",  # 眠二
+    #     "012122",  # 眠二
+    #     "012212",  # 眠二
+    #     "12221",  # 眠二
+    # ],
 }
 
 
@@ -250,7 +262,7 @@ def get_successors(board, color, priority, EMPTY=-1):
     idx_list = [(x, y) for x in range(15) for y in range(15) if board[x][y] == EMPTY]
     idx_list.sort(key=priority)
     # idx_list = idx_list[:49]
-    idx_list = [idx for idx in idx_list if 0 < priority(idx) < 2]
+    idx_list = [idx for idx in idx_list if 0 < priority(idx) <= 2]
     # print(idx_list)
     for x, y in idx_list:
         next_board[x][y] = color

@@ -1,5 +1,6 @@
 import re
 from functools import partial
+# import time
 
 
 def Search(board, EMPTY, BLACK, WHITE, isblack):
@@ -23,45 +24,61 @@ def RandomSearch(board, EMPTY):
 
 
 def AlphaBetaSearch(board, EMPTY, BLACK, WHITE, isblack, depth=2):
-    def max_value(board, alpha, beta, depth, pruncount, searchcount):
-        if depth == 0 or is_board_full(board):
+    def max_value(board, alpha, beta, depth, counts):
+        pattb = (1, 1, 1, 1, 1)
+        pattw = (0, 0, 0, 0, 0)
+        if depth == 0 or count_pattern(board, pattw) > 0:
             return evaluate(board, isblack), None
         value = float('-inf')
         move = None
         priority_func = partial(_coordinate_priority, board=board)
         for x, y, next_board in get_successors(board, BLACK if isblack else WHITE, priority=priority_func):
-            searchcount += 1
-            next_value, _ = min_value(next_board, alpha, beta, depth - 1, pruncount, searchcount)
+            counts['searchcount'] += 1
+            next_value, _ = min_value(next_board, alpha, beta, depth - 1, counts)
             if next_value > value:
                 value, move = next_value, (x, y)
             if value >= beta:
-                pruncount += 1
+                counts['pruncount'] += 1
+                print_board(next_board)
+                print(f"score: {value}")
+                print(f"{counts['pruncount']}pruning: alpha: {value}, beta: {beta}")
                 return value, move
+            if value > alpha:
+                print_board(next_board)
+                print(f"Update alpha: {value}")
             alpha = max(alpha, value)
-            print(f"alpha: {alpha}, beta: {beta}")
+            # print(f"alpha: {alpha}, beta: {beta}")
         return value, move
 
-    def min_value(board, alpha, beta, depth, pruncount, searchcount):
-        if depth == 0 or is_board_full(board):
+    def min_value(board, alpha, beta, depth, counts):
+        pattw= (0, 0, 0, 0, 0)
+        pattb = (1, 1, 1, 1, 1)
+        if depth == 0 or count_pattern(board, pattb) > 0:
             return evaluate(board, isblack), None
         value = float('inf')
         move = None
         priority_func = partial(_coordinate_priority, board=board)
         for x, y, next_board in get_successors(board, WHITE if isblack else BLACK, priority=priority_func):
-            searchcount += 1
-            next_value, _ = max_value(next_board, alpha, beta, depth - 1, pruncount, searchcount)
+            counts['searchcount'] += 1
+            next_value, _ = max_value(next_board, alpha, beta, depth - 1, counts)
             if next_value < value:
                 value, move = next_value, (x, y)
             if value <= alpha:
-                pruncount += 1
+                counts['pruncount'] += 1
+                print_board(next_board)
+                print(f"score: {value}")
+                print(f"{counts['pruncount']}pruning: alpha: {alpha}, beta: {value}")
                 return value, move
+            if value < beta:
+                print_board(next_board)
+                print(f"Update beta: {value}")
             beta = min(beta, value)
-            print(f"alpha: {alpha}, beta: {beta}")
+            # print(f"alpha: {alpha}, beta: {beta}")
         return value, move
 
-    pruncount = 0
-    searchcount = 0
-    alpha, move = max_value(board, float('-inf'), float('inf'), depth, pruncount, searchcount)
+    counts = {'pruncount': 0, 'searchcount': 0}
+    alpha, move = max_value(board, float('-inf'), float('inf'), depth, counts)
+    print(f"搜索次数: {counts['searchcount']}, 剪枝次数: {counts['pruncount']}")
     return move[0], move[1], alpha
 
 
@@ -92,56 +109,85 @@ position_value = [
 ]
 
 SCORES = {
-    "FIVE": 999900000,  # 连五
-    "FOUR": 33300000,  # 活四
-    "SFOUR": 6250000,  # 冲四
+    "FIVE": 999999999,  # 连五
+    "FOUR": 66660000,  # 活四
+    "SFOUR": 6660000,  # 冲四
     "THREE": 625000,  # 活三
-    "STHREE": 12500,  # 眠三
-    "TWO": 250,  # 活二
-    "STWO": 25,  # 眠二
+    "STHREE": 62500,  # 眠三
+    # "TWO": 6250,  # 活二
+    # "STWO": 625,  # 眠二
 }
+# SCORES = {
+#     "FIVE": 999999999,  # 连五
+#     "FOUR": 50000,  # 活四
+#     "SFOUR": 5000,  # 冲四
+#     "THREE": 5000,  # 活三
+#     "STHREE": 500,  # 眠三
+#     "TWO": 50,  # 活二
+#     "STWO": 5,  # 眠二
+# }
 
 # 定义棋型的模式
 PATTERNS = {
-    "FIVE": [[1, 1, 1, 1, 1]],  # 连五
+    "FIVE": ["11111",
+    ],  # 连五
     "FOUR": [
-        [2, 1, 1, 1, 1, 2],  # 活四
+        "211112",  # 活四
     ],
     "SFOUR": [
-        [0, 1, 1, 1, 1, 2],  # 冲四
-        [2, 1, 1, 1, 1, 0],  # 冲四
-        [1, 1, 1, 2, 1],  # 冲四
-        [1, 1, 2, 1, 1],  # 冲四
+        "011112",  # 冲四
+        "211110",  # 冲四
+        "011121",  # 冲四
+        "121110",  # 冲四
+        "11211",  # 冲四
+        # "01110012",  # 冲四
+        # "21001110",  # 冲四
+        # "01110112",  # 冲四
+        # "21001110",  # 冲四
     ],
     "THREE": [
-        [2, 1, 1, 1, 2],  # 活三
-        [2, 1, 1, 2, 1, 2],  # 活三
+        "21112",  # 活三
+        "211212",  # 活三
     ],
     "STHREE": [
-        [0, 1, 1, 1, 2, 2],  # 眠三
-        [0, 1, 1, 2, 1, 2],  # 眠三
-        [0, 1, 2, 1, 1, 2],  # 眠三
-        [1, 1, 2, 2, 1],  # 眠三
-        [1, 2, 1, 2, 1],  # 眠三
-        [0, 2, 1, 1, 1, 2, 0],  # 眠三
+        "01112",  # 眠三
+        "21110",  # 眠三
+        "011212",  # 眠三
+        "212110",  # 眠三
+        "012112",  # 眠三
+        "211210",  # 眠三
+        "11221",  # 眠三
+        "12211",  # 眠三
+        "12121",  # 眠三
     ],
-    "TWO": [
-        [2, 2, 1, 1, 2, 2],  # 活二
-        [2, 1, 2, 1, 2],  # 活二
-        [2, 1, 2, 2, 1, 2],  # 活二
-    ],
-    "STWO": [
-        [0, 1, 1, 2, 2, 2],  # 眠二
-        [0, 1, 2, 1, 2, 2],  # 眠二
-        [0, 1, 2, 2, 1, 2],  # 眠二
-        [1, 2, 2, 2, 1],  # 眠二
-    ],
+    # "TWO": [
+    #     "221122",  # 活二
+    #     "21212",  # 活二
+    #     "212212",  # 活二
+    # ],
+    # "STWO": [
+    #     "011222",  # 眠二
+    #     "012122",  # 眠二
+    #     "012212",  # 眠二
+    #     "12221",  # 眠二
+    # ],
 }
+
+
+def print_board(board):
+    for row in board:
+        for cell in row:
+            if cell == -1:
+                print('.', end=' ')
+            elif cell == 1:
+                print('B', end=' ')
+            elif cell == 0:
+                print('W', end=' ')
+        print()
 
 
 def evaluate(board, isblack):
     # 定义棋型的分数
-
     # 初始化分数
     score = 0
 
@@ -150,41 +196,43 @@ def evaluate(board, isblack):
         for j in range(len(board[0])):
             # 检查四个方向
             for dx, dy in [(0, 1), (1, 0), (1, 1), (1, -1)]:
+                if board[i][j] != -1:
                 # 获取线段
-                line = [get(board, i + k * dx, j + k * dy) for k in range(-5, 6)]
-                # 检查每种棋型
-                for pattern, values in PATTERNS.items():
-                    for value in values:
-                        # 将line和value都转换为字符串
-                        str_line = ''.join(map(str, line))
-                        str_value = ''.join(map(str, value))
-                        # 使用re库的search函数来查找value在line中的位置
-                        if re.search(str_value, str_line):
-                            score += SCORES[pattern] * (1 if isblack else -1)
-                        else:
-                            score += 8  # 如果没有匹配到，增加8分
-                        # 反转棋型，用于检查另一种颜色的棋子
-                        value = [2 if v == 2 else 1 if v == 0 else 0 for v in value]
-                        str_value = ''.join(map(str, value))
-                        if re.search(str_value, str_line):
-                            score += SCORES[pattern] * (-1 if isblack else 1)
-                        else:
-                            score -= 8  # 如果没有匹配到，增加8分
-                # 加上位置价值
-            if board[i][j] != -1:
-                if isblack:
+                    line = get_line(board, i, j, dx, dy)
+                    # 检查每种棋型
+                    for pattern, values in PATTERNS.items():
+                        for value in values:
+                            # 将line和value都转换为字符串
+                            # 使用re库的search函数来查找value在line中的位置
+                            if re.search(value, line):
+                                score += SCORES[pattern] * 1
+                                # if str_value == '211112':
+                                #     score += 90000000
+                            else:
+                                score += 8  # 如果没有匹配到，增加8分
+                            # 反转棋型，用于检查另一种颜色的棋子
+                            value = value.replace("1", "t").replace("0", "1").replace("t", "0")
+                            if re.search(value, line):
+                                score += SCORES[pattern] * -1
+                            else:
+                                score -= 8  # 如果没有匹配到，增加8分
+                    # 加上位置价值
+
                     score += position_value[i][j] * (1 if board[i][j] == 1 else -1)
-                else:
-                    score += position_value[i][j] * (-1 if board[i][j] == 1 else 1)
-    # print(score)
+    # print_board(board)
+    # print(f"当前局面评分: {score}")
     return score
 
 
-def get(board, i, j):
-    # 获取棋盘上的值，如果超出边界则返回-2
-    if 0 <= i < len(board) and 0 <= j < len(board[0]) and board[i][j] != -1:
-        return board[i][j]
-    return 2
+def get_line(board, i, j, dx, dy, length=11):
+    # 获取棋盘上的一条线段，如果超出边界则返回'2'
+    line = ''
+    for k in range(-5, 6):
+        if 0 <= i + k * dx < len(board) and 0 <= j + k * dy < len(board[0]) and board[i + k * dx][j + k * dy] != -1:
+            line += str(board[i + k * dx][j + k * dy])
+        else:
+            line += '2'
+    return line
 
 
 # 以下为编写搜索和评价函数时可能会用到的函数，请看情况使用、修改和优化
@@ -221,12 +269,13 @@ def get_successors(board, color, priority, EMPTY=-1):
     '''
     # 注意：生成器返回的所有 next_board 是同一个 list！
     from copy import deepcopy
-    next_board = deepcopy(board)
+    next_board = [row[:] for row in board]
     ROWS = len(board)
     idx_list = [(x, y) for x in range(15) for y in range(15) if board[x][y] == EMPTY]
     idx_list.sort(key=priority)
-    idx_list = idx_list[:49]
-    print(idx_list)
+    # idx_list = idx_list[:49]
+    idx_list = [idx for idx in idx_list if 0 < priority(idx) <= 2]
+    # print(idx_list)
     for x, y in idx_list:
         next_board[x][y] = color
         yield (x, y, next_board)
@@ -319,76 +368,3 @@ def is_win(board, color, EMPTY=-1):
     pattern1 = (color, color, color, color, color)  # 检查五子相连
     pattern2 = (EMPTY, color, color, color, color, EMPTY)  # 检查「活四」
     return count_pattern(board, pattern1) + count_pattern(board, pattern2) > 0
-
-# # 这是使用 successors 函数的一个例子，打印所有后继棋盘
-# def _test_print_successors():
-#     '''
-#     棋盘：
-#       0 y 1   2
-#     0 1---+---1
-#     x |   |   |
-#     1 +---0---0
-#       |   |   |
-#     2 +---+---1
-#     本步轮到 1 下
-#     '''
-#     board = [
-#         [1, -1, 1],
-#         [-1, 0, 0],
-#         [-1, -1, 1]]
-#     EMPTY = -1
-#     next_states = get_successors(board, 1, _coordinate_priority, EMPTY)
-#     for x, y, state in next_states:
-#         print(x, y, state)
-#     # 输出：
-#     # 0 1 [[1, 1, 1], [-1, 0, 0], [-1, -1, 1]]
-#     # 1 0 [[1, -1, 1], [1, 0, 0], [-1, -1, 1]]
-#     # 2 0 [[1, -1, 1], [-1, 0, 0], [1, -1, 1]]
-#     # 2 1 [[1, -1, 1], [-1, 0, 0], [-1, 1, 1]]
-
-
-# # 这是使用以上函数的一个例子
-# def _test_find_pattern():
-#     '''
-#     棋盘：
-#       0 y 1   2   3   4   5
-#     0 1---+---1---+---+---+
-#     x |   |   |   |   |   |
-#     1 +---0---0---0---0---+ ... 此行有 0 的「活四」
-#       |   |   |   |   |   |
-#     2 +---+---1---+---+---1
-#       |   |   |   |   |   |
-#     3 +---+---+---+---0---+
-#       |   |   |   |   |   |
-#     4 +---+---+---1---0---1
-#       |   |   |   |   |   |
-#     5 +---+---+---+---+---+
-#     '''
-#     board = [
-#         [1, -1, 1, -1, -1, -1],
-#         [-1, 0, 0, 0, 0, -1],
-#         [-1, -1, 1, -1, -1, 1],
-#         [-1, -1, -1, -1, 0, -1],
-#         [-1, -1, -1, 1, 0, 1],
-#         [-1, -1, -1, -1, -1, -1]]
-#     pattern = (1, 0, 1)
-#     pattern_list = get_pattern_locations(board, pattern)
-#     assert pattern_list == [(0, 0, 2), (0, 2, 0), (2, 5, 3), (4, 3, 1)]
-#     # (0, 0) 处有向右下的 pattern
-#     # (0, 2) 处有向下方的 pattern
-#     # (2, 5) 处有向左下的 pattern
-#     # (4, 3) 处有向右方的 pattern
-#     assert count_pattern(board, (1,)) == 6
-#     # 6 个 1
-#     assert count_pattern(board, (1, 0)) == 13
-#     # [(0, 0, 2), (0, 2, 0), (0, 2, 2), (0, 2, 3), (2, 2, 4),
-#     #  (2, 2, 6), (2, 2, 7), (2, 5, 3), (2, 5, 6), (4, 3, 1),
-#     #  (4, 3, 7), (4, 5, 5), (4, 5, 6)]
-#     assert is_win(board, 1) == False
-#     # 1 没有达到胜利条件
-#     assert is_win(board, 0) == True
-# 0 有「活四」，胜利
-
-# test = [1, 1, 1, 2, 0]
-# test = [2 if v == 2 else 1 if v == 0 else 0 for v in test]
-# print(test)
