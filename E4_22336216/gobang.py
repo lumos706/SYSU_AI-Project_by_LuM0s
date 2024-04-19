@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 import pygame
 import time
 import game
-from Agent_2 import Search
+from Agent import Search
 
 ROWS = 15
 SIDE = 30
@@ -136,7 +136,7 @@ if __name__ == '__main__':
 ============================================
     ''')
     parser = ArgumentParser(description='gobang')
-    parser.add_argument('--chess_file', type=str, default="example/15.txt")
+    parser.add_argument('--chess_file', type=str, default=None)
     args = parser.parse_args()
     gobang = Gobang("五子棋", (SCREEN_WIDTH, SCREEN_HEIGHT), chess_file=args.chess_file)
     gobang.run()

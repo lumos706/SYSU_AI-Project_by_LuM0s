@@ -1,61 +1,74 @@
 import re
 from functools import partial
+import numpy as np
+
 # import time
 
 
 def Search(board, EMPTY, BLACK, WHITE, isblack):
     # 目前 AI 的行为是随机落子，请实现 AlphaBetaSearch 函数后注释掉现在的 return
     # 语句，让函数调用你实现的 alpha-beta 剪枝
-    # return RandomSearch(board, EMPTY)
     return AlphaBetaSearch(board, EMPTY, BLACK, WHITE, isblack)
 
 
-def RandomSearch(board, EMPTY):
-    # AI 的占位行为，随机选择一个位置落子
-    # 在实现 alpha-beta 剪枝中不需要使用
-    from random import randint
-    ROWS = len(board)
-    x = randint(0, ROWS - 1)
-    y = randint(0, ROWS - 1)
-    while board[x][y] != EMPTY:
-        x = randint(0, ROWS - 1)
-        y = randint(0, ROWS - 1)
-    return x, y, 0
+def AlphaBetaSearch(board, EMPTY, BLACK, WHITE, isblack, depth=3):
+    # 这个函数使用 alpha-beta 剪枝的方法搜索棋盘，返回最佳的落子位置
+    # board 是当前棋盘的状态，EMPTY, BLACK, WHITE 分别代表空格、黑子和白子
+    # isblack 是一个布尔值，如果为 True 则代表当前轮到黑子，否则轮到白子
+    # depth 是搜索的深度
 
-
-def AlphaBetaSearch(board, EMPTY, BLACK, WHITE, isblack, depth=1):
+    # 定义 max_value 和 min_value 函数，分别用于在搜索树中的 MAX 节点和 MIN 节点进行搜索
+    # 定义 counts 字典，用于记录搜索的节点数和剪枝的次数
+    # 最后返回最佳的落子位置和对应的 alpha 值
     def max_value(board, alpha, beta, depth, counts):
-        if depth == 0 or is_board_full(board):
-            return evaluate(board, isblack), None
+        pattw1 = (0, 0, 0, 0, 0)
+        pattw2 = (-1, 0, 0, 0, 0, -1)
+        if depth == 0 or count_pattern(board, pattw1) + count_pattern(board, pattw2) > 0:
+            return evaluate(board, isblack), None  # 到达叶节点，返回评估值
         value = float('-inf')
         move = None
-        priority_func = partial(_coordinate_priority, board=board)
+        priority_func = partial(_coordinate_priority, board=board)  # 优先级函数
         for x, y, next_board in get_successors(board, BLACK if isblack else WHITE, priority=priority_func):
             counts['searchcount'] += 1
             next_value, _ = min_value(next_board, alpha, beta, depth - 1, counts)
-            if next_value > value:
+            if next_value > value:  # 更新最大值
                 value, move = next_value, (x, y)
-            if value >= beta:
+            if value >= beta:  # 剪枝(alpha 剪枝)
                 counts['pruncount'] += 1
+                # print_board(next_board)
+                # print(f"score: {value}")
+                # print(f"{counts['pruncount']}pruning: alpha: {value}, beta: {beta}")
                 return value, move
+            # if value > alpha:
+            #     print_board(next_board)
+            #     print(f"Update alpha: {value}")
             alpha = max(alpha, value)
             # print(f"alpha: {alpha}, beta: {beta}")
         return value, move
 
     def min_value(board, alpha, beta, depth, counts):
-        if depth == 0 or is_board_full(board):
-            return evaluate(board, isblack), None
+        pattb1 = (1, 1, 1, 1, 1)
+        pattb2 = (-1, 1, 1, 1, 1, -1)
+        if depth == 0 or count_pattern(board, pattb1) > 0 or (
+                count_pattern(board, pattb2) > 0 and not is_win(board, WHITE, EMPTY)):
+            return evaluate(board, isblack), None  # 到达叶节点，返回评估值
         value = float('inf')
         move = None
-        priority_func = partial(_coordinate_priority, board=board)
+        priority_func = partial(_coordinate_priority, board=board)  # 优先级函数
         for x, y, next_board in get_successors(board, WHITE if isblack else BLACK, priority=priority_func):
             counts['searchcount'] += 1
             next_value, _ = max_value(next_board, alpha, beta, depth - 1, counts)
-            if next_value < value:
+            if next_value < value:  # 更新最小值
                 value, move = next_value, (x, y)
-            if value <= alpha:
+            if value <= alpha:  # 剪枝(beta 剪枝)
                 counts['pruncount'] += 1
+                # print_board(next_board)
+                # print(f"score: {value}")
+                # print(f"{counts['pruncount']}pruning: alpha: {alpha}, beta: {value}")
                 return value, move
+            # if value < beta:
+            #     print_board(next_board)
+            #     print(f"Update beta: {value}")
             beta = min(beta, value)
             # print(f"alpha: {alpha}, beta: {beta}")
         return value, move
@@ -64,10 +77,6 @@ def AlphaBetaSearch(board, EMPTY, BLACK, WHITE, isblack, depth=1):
     alpha, move = max_value(board, float('-inf'), float('inf'), depth, counts)
     print(f"搜索次数: {counts['searchcount']}, 剪枝次数: {counts['pruncount']}")
     return move[0], move[1], alpha
-
-
-def is_board_full(board, EMPTY=-1):
-    return not any(EMPTY in row for row in board)
 
 
 # 你可能还需要定义评价函数或者别的什么
@@ -98,28 +107,23 @@ SCORES = {
     "SFOUR": 6660000,  # 冲四
     "THREE": 625000,  # 活三
     "STHREE": 62500,  # 眠三
-    "TWO": 6250,  # 活二
-    "STWO": 625,  # 眠二
+
 }
-# SCORES = {
-#     "FIVE": 999999999,  # 连五
-#     "FOUR": 50000,  # 活四
-#     "SFOUR": 5000,  # 冲四
-#     "THREE": 5000,  # 活三
-#     "STHREE": 500,  # 眠三
-#     "TWO": 50,  # 活二
-#     "STWO": 5,  # 眠二
-# }
 
 # 定义棋型的模式
 PATTERNS = {
-    "FIVE": ["11111"],  # 连五
+    "FIVE": ["11111",
+             ],  # 连五
     "FOUR": [
         "211112",  # 活四
     ],
     "SFOUR": [
         "011112",  # 冲四
         "211110",  # 冲四
+        "011121",  # 冲四
+        "121110",  # 冲四
+        "11211",  # 冲四
+
     ],
     "THREE": [
         "21112",  # 活三
@@ -136,17 +140,7 @@ PATTERNS = {
         "12211",  # 眠三
         "12121",  # 眠三
     ],
-    "TWO": [
-        "221122",  # 活二
-        "21212",  # 活二
-        "212212",  # 活二
-    ],
-    "STWO": [
-        "011222",  # 眠二
-        "012122",  # 眠二
-        "012212",  # 眠二
-        "12221",  # 眠二
-    ],
+
 }
 
 
@@ -163,6 +157,8 @@ def print_board(board):
 
 
 def evaluate(board, isblack):
+    # 这个函数用于评估棋盘的状态，返回一个分数
+    # board 是当前棋盘的状态，isblack 是一个布尔值，如果为 True 则代表当前轮到黑子，否则轮到白子
     # 定义棋型的分数
     # 初始化分数
     score = 0
@@ -173,7 +169,7 @@ def evaluate(board, isblack):
             # 检查四个方向
             for dx, dy in [(0, 1), (1, 0), (1, 1), (1, -1)]:
                 if board[i][j] != -1:
-                # 获取线段
+                    # 获取线段
                     line = get_line(board, i, j, dx, dy)
                     # 检查每种棋型
                     for pattern, values in PATTERNS.items():
@@ -201,7 +197,8 @@ def evaluate(board, isblack):
 
 
 def get_line(board, i, j, dx, dy, length=11):
-    # 获取棋盘上的一条线段，如果超出边界则返回'2'
+    # 这个函数用于获取棋盘上的一条线段
+    # board 是当前棋盘的状态，i 和 j 是线段的起始位置，dx 和 dy 是线段的方向，length 是线段的长度
     line = ''
     for k in range(-5, 6):
         if 0 <= i + k * dx < len(board) and 0 <= j + k * dy < len(board[0]) and board[i + k * dx][j + k * dy] != -1:
@@ -218,18 +215,18 @@ def get_line(board, i, j, dx, dy, length=11):
 def _coordinate_priority(coordinate, board, EMPTY=-1):
     x, y = coordinate[0], coordinate[1]
     ROWS = 15
-    occupied_coordinates = [(i, j) for i in range(ROWS) for j in range(ROWS) if board[i][j] != EMPTY]
-    distance = ((x - 7) ** 2 + (y - 7) ** 2) ** 0.5
-    # 计算到所有已有棋子的最小欧氏距离
-    if not occupied_coordinates:
-        return distance
-    min_distance = min(((x - i) ** 2 + (y - j) ** 2) ** 0.5 for i, j in occupied_coordinates)
-
-    # 返回负距离作为优先级（距离越小，优先级越高）
-    return min_distance
+    occupied_coordinates = np.array([(i, j) for i in range(ROWS) for j in range(ROWS) if board[i][j] != EMPTY])
+    if len(occupied_coordinates) == 0:
+        return ((x - 7) ** 2 + (y - 7) ** 2) ** 0.5
+    else:
+        distances = np.sqrt(np.sum((occupied_coordinates - np.array([x, y])) ** 2, axis=1))
+        min_distance = np.min(distances)
+        return min_distance
 
 
 def get_successors(board, color, priority, EMPTY=-1):
+    # 这个函数用于获取当前状态的所有后继状态
+    # board 是当前棋盘的状态，color 是当前轮到的颜色，priority 是一个函数，用于确定落子位置的优先级，EMPTY 代表空格
     '''
     返回当前状态的所有后继（默认按坐标顺序从左往右，从上往下）
     ---------------参数---------------
@@ -250,30 +247,12 @@ def get_successors(board, color, priority, EMPTY=-1):
     idx_list = [(x, y) for x in range(15) for y in range(15) if board[x][y] == EMPTY]
     idx_list.sort(key=priority)
     # idx_list = idx_list[:49]
-    idx_list = [idx for idx in idx_list if 0 < priority(idx) < 2]
+    idx_list = [idx for idx in idx_list if 0 < priority(idx) <= 2]
     # print(idx_list)
     for x, y in idx_list:
         next_board[x][y] = color
         yield (x, y, next_board)
         next_board[x][y] = EMPTY
-
-
-def get_next_move_locations(board, EMPTY=-1):
-    '''
-    获取下一步的所有可能落子位置
-    ---------------参数---------------
-    board       当前的局面，是 15×15 的二维 list，表示棋盘
-    EMPTY       空格在 board 中的表示，默认为 -1
-    ---------------返回---------------
-    一个由 tuple 组成的 list，每个 tuple 代表一个可下的坐标
-    '''
-    next_move_locations = []
-    ROWS = len(board)
-    for x in range(ROWS):
-        for y in range(ROWS):
-            if board[x][y] != EMPTY:
-                next_move_locations.append((x, y))
-    return next_move_locations
 
 
 def get_pattern_locations(board, pattern):
@@ -341,6 +320,10 @@ def count_pattern(board, pattern):
 
 def is_win(board, color, EMPTY=-1):
     # 检查在当前 board 中 color 是否胜利
-    pattern1 = (color, color, color, color, color)  # 检查五子相连
-    pattern2 = (EMPTY, color, color, color, color, EMPTY)  # 检查「活四」
-    return count_pattern(board, pattern1) + count_pattern(board, pattern2) > 0
+    pattern1 = (color, color, color, color, color)
+    pattern2 = (EMPTY, color, color, color, color)
+    pattern3 = (color, color, color, EMPTY, color)
+    pattern4 = (color, color, EMPTY, color, color)
+    return count_pattern(board, pattern1) + count_pattern(board, pattern2) + count_pattern(board,
+                                                                                           pattern3) + count_pattern(
+        board, pattern4) > 0
