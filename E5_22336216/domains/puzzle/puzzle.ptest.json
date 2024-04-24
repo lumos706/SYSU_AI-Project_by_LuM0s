@@ -1,0 +1,18 @@
+{
+  "defaultDomain": "puzzle.pddl",
+  "defaultOptions": "",
+  "cases": [
+    {
+      "problem": "PPT1.pddl"
+    },
+    {
+      "problem": "PPT2.pddl"
+    },
+    {
+      "problem": "PPT3.pddl"
+    },
+    {
+      "problem": "PPT4.pddl"
+    }
+  ]
+}

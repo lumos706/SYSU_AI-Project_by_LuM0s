@@ -1,0 +1,9 @@
+;;!domain: spare_tire
+;;!problem: prob
+
+0.00000: (REMOVE SPARE TRUNK)
+0.00100: (REMOVE FLAT AXLE)
+0.00200: (PUTON SPARE)
+
+; Makespan: 0.002
+; Metric: 0.002

@@ -1,0 +1,9 @@
+{
+  "defaultDomain": "spare_tire.pddl",
+  "defaultOptions": "",
+  "cases": [
+    {
+      "problem": "problem.pddl"
+    }
+  ]
+}
