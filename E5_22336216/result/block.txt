@@ -1,0 +1,57 @@
+Planning service: https://solver.planning.domains:5001/package/dual-bfws-ffparser/solve
+Domain: blocks, Problem: prob
+
+
+task contains conditional effects. turning off state domination.
+
+ --- OK.
+ Match tree built with 60 nodes.
+
+PDDL problem description loaded:
+	Domain: BLOCKS
+	Problem: PROB
+	#Actions: 60
+	#Fluents: 39
+Goals found: 6
+Goals_Edges found: 6
+Starting search with 1-BFWS...
+--[4 / 0]--
+--[4 / 4]--
+--[3 / 0]--
+--[3 / 5]--
+--[3 / 6]--
+--[3 / 7]--
+--[3 / 8]--
+--[2 / 0]--
+--[2 / 5]--
+--[2 / 6]--
+--[2 / 7]--
+--[2 / 8]--
+--[1 / 0]--
+--[1 / 5]--
+--[1 / 6]--
+--[1 / 7]--
+--[0 / 0]--
+--[0 / 5]--
+Total time: 0.000544999
+Nodes generated during search: 179
+Nodes expanded during search: 29
+Plan found with cost: 9
+Fast-BFS search completed in 0.000544999 secs
+
+
+Plan found:
+0.00000: (MOVETOTABLE A)
+0.00100: (MOVE F A)
+0.00200: (MOVETOTABLE B)
+0.00300: (MOVE E C)
+0.00400: (MOVE B D)
+0.00500: (MOVE E B)
+0.00600: (MOVETOTABLE F)
+0.00700: (MOVE A C)
+0.00800: (MOVE F A)
+Metric: 0.008
+Makespan: 0.008
+States evaluated: undefined
+☑ problem.pddl (2.027 sec)
+Planner found 1 plan(s) in 2.027secs.
